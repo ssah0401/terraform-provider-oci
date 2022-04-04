@@ -10,19 +10,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/terraform-providers/terraform-provider-oci/internal/acctest"
-	tf_client "github.com/terraform-providers/terraform-provider-oci/internal/client"
-	"github.com/terraform-providers/terraform-provider-oci/internal/resourcediscovery"
-	"github.com/terraform-providers/terraform-provider-oci/internal/tfresource"
-	"github.com/terraform-providers/terraform-provider-oci/internal/utils"
-
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/oracle/oci-go-sdk/v64/common"
 	oci_waf "github.com/oracle/oci-go-sdk/v64/waf"
 
 	"github.com/terraform-providers/terraform-provider-oci/httpreplay"
+	"github.com/terraform-providers/terraform-provider-oci/internal/acctest"
+	tf_client "github.com/terraform-providers/terraform-provider-oci/internal/client"
+	"github.com/terraform-providers/terraform-provider-oci/internal/resourcediscovery"
+	"github.com/terraform-providers/terraform-provider-oci/internal/tfresource"
+	"github.com/terraform-providers/terraform-provider-oci/internal/utils"
 )
 
 var (
@@ -40,7 +39,7 @@ var (
 		"compartment_id":             acctest.Representation{RepType: acctest.Required, Create: `${var.compartment_id}`},
 		"display_name":               acctest.Representation{RepType: acctest.Optional, Create: `displayName`, Update: `displayName2`},
 		"id":                         acctest.Representation{RepType: acctest.Optional, Create: `${oci_waf_web_app_firewall.test_web_app_firewall.id}`},
-		"state":                      acctest.Representation{RepType: acctest.Optional, Create: []string{`ACTIVE`}},
+		"state":                      acctest.Representation{RepType: acctest.Optional, Create: []string{`state`}},
 		"web_app_firewall_policy_id": acctest.Representation{RepType: acctest.Optional, Create: `${oci_waf_web_app_firewall_policy.test_web_app_firewall_policy.id}`},
 		"filter":                     acctest.RepresentationGroup{RepType: acctest.Required, Group: webAppFirewallDataSourceFilterRepresentation}}
 	webAppFirewallDataSourceFilterRepresentation = map[string]interface{}{
@@ -53,12 +52,14 @@ var (
 		"compartment_id":             acctest.Representation{RepType: acctest.Required, Create: `${var.compartment_id}`},
 		"load_balancer_id":           acctest.Representation{RepType: acctest.Required, Create: `${oci_load_balancer_load_balancer.test_load_balancer.id}`},
 		"web_app_firewall_policy_id": acctest.Representation{RepType: acctest.Required, Create: `${oci_waf_web_app_firewall_policy.test_web_app_firewall_policy.id}`},
-		//"defined_tags":               acctest.Representation{RepType: acctest.Optional, Create: `${map("${oci_identity_tag_namespace.tag-namespace1.name}.${oci_identity_tag.tag1.name}", "value")}`, Update: `${map("${oci_identity_tag_namespace.tag-namespace1.name}.${oci_identity_tag.tag1.name}", "updatedValue")}`},
-		"display_name":  acctest.Representation{RepType: acctest.Optional, Create: `displayName`, Update: `displayName2`},
-		"freeform_tags": acctest.Representation{RepType: acctest.Optional, Create: map[string]string{"bar-key": "value"}}, //, Update: map[string]string{"Department": "Accounting"} but prevents from updating tags with policyID in body
+		"defined_tags":               acctest.Representation{RepType: acctest.Optional, Create: `${map("${oci_identity_tag_namespace.tag-namespace1.name}.${oci_identity_tag.tag1.name}", "value")}`, Update: `${map("${oci_identity_tag_namespace.tag-namespace1.name}.${oci_identity_tag.tag1.name}", "updatedValue")}`},
+		"display_name":               acctest.Representation{RepType: acctest.Optional, Create: `displayName`, Update: `displayName2`},
+		"freeform_tags":              acctest.Representation{RepType: acctest.Optional, Create: map[string]string{"bar-key": "value"}, Update: map[string]string{"Department": "Accounting"}},
+		"system_tags":                acctest.Representation{RepType: acctest.Optional, Create: map[string]string{"systemTags": "value"}, Update: map[string]string{"systemTags": "updatedValue"}},
 	}
 
-	WebAppFirewallResourceDependencies = acctest.GenerateResourceFromRepresentationMap("oci_load_balancer_load_balancer", "test_load_balancer", acctest.Required, acctest.Create, loadBalancerRepresentation) +
+	WebAppFirewallResourceDependencies = DefinedTagsDependencies +
+		acctest.GenerateResourceFromRepresentationMap("oci_load_balancer_load_balancer", "test_load_balancer", acctest.Required, acctest.Create, loadBalancerRepresentation) +
 		LoadBalancerSubnetDependencies +
 		acctest.GenerateResourceFromRepresentationMap("oci_waf_web_app_firewall_policy", "test_web_app_firewall_policy", acctest.Required, acctest.Create, webAppFirewallPolicyRepresentation)
 )
@@ -81,7 +82,7 @@ func TestWafWebAppFirewallResource_basic(t *testing.T) {
 	singularDatasourceName := "data.oci_waf_web_app_firewall.test_web_app_firewall"
 
 	var resId, resId2 string
-	// Save TF content to Create resource with optional properties. This has to be exactly the same as the config part in the "Create with optionals" step in the test.
+	// Save TF content to Create resource with optional properties. This has to be exactly the same as the config part in the "create with optionals" step in the test.
 	acctest.SaveConfigContent(config+compartmentIdVariableStr+WebAppFirewallResourceDependencies+
 		acctest.GenerateResourceFromRepresentationMap("oci_waf_web_app_firewall", "test_web_app_firewall", acctest.Optional, acctest.Create, webAppFirewallRepresentation), "waf", "webAppFirewall", t)
 
@@ -140,7 +141,7 @@ func TestWafWebAppFirewallResource_basic(t *testing.T) {
 			Config: config + compartmentIdVariableStr + compartmentIdUVariableStr + WebAppFirewallResourceDependencies +
 				acctest.GenerateResourceFromRepresentationMap("oci_waf_web_app_firewall", "test_web_app_firewall", acctest.Optional, acctest.Create,
 					acctest.RepresentationCopyWithNewProperties(webAppFirewallRepresentation, map[string]interface{}{
-						"compartment_id": acctest.Representation{RepType: acctest.Required, Create: `${var.compartment_id_for_update}`},
+						"compartment_id": Representation{RepType: acctest.Required, Create: `${var.compartment_id_for_update}`},
 					})),
 			Check: acctest.ComposeAggregateTestCheckFuncWrapper(
 				resource.TestCheckResourceAttr(resourceName, "backend_type", "LOAD_BALANCER"),
@@ -189,7 +190,6 @@ func TestWafWebAppFirewallResource_basic(t *testing.T) {
 				},
 			),
 		},
-
 		// verify datasource
 		{
 			Config: config +
@@ -199,7 +199,7 @@ func TestWafWebAppFirewallResource_basic(t *testing.T) {
 			Check: acctest.ComposeAggregateTestCheckFuncWrapper(
 				resource.TestCheckResourceAttr(datasourceName, "compartment_id", compartmentId),
 				resource.TestCheckResourceAttr(datasourceName, "display_name", "displayName2"),
-				resource.TestCheckResourceAttrSet(datasourceName, "id"),
+				resource.TestCheckResourceAttr(datasourceName, "id", "id"),
 				resource.TestCheckResourceAttr(datasourceName, "state.#", "1"),
 				resource.TestCheckResourceAttrSet(datasourceName, "web_app_firewall_policy_id"),
 
@@ -256,9 +256,9 @@ func testAccCheckWafWebAppFirewallDestroy(s *terraform.State) error {
 				deletedLifecycleStates := map[string]bool{
 					string(oci_waf.WebAppFirewallLifecycleStateDeleted): true,
 				}
-				if _, ok := deletedLifecycleStates[string(response.GetLifecycleState())]; !ok {
+				if _, ok := deletedLifecycleStates[string(response.LifecycleState)]; !ok {
 					//resource lifecycle state is not in expected deleted lifecycle states.
-					return fmt.Errorf("resource lifecycle state: %s is not in expected deleted lifecycle states", response.GetLifecycleState())
+					return fmt.Errorf("resource lifecycle state: %s is not in expected deleted lifecycle states", response.LifecycleState)
 				}
 				//resource lifecycle state is in expected deleted lifecycle states. continue with next one.
 				continue
@@ -326,14 +326,14 @@ func getWebAppFirewallIds(compartment string) ([]string, error) {
 
 	listWebAppFirewallsRequest := oci_waf.ListWebAppFirewallsRequest{}
 	listWebAppFirewallsRequest.CompartmentId = &compartmentId
-	listWebAppFirewallsRequest.LifecycleState = []oci_waf.WebAppFirewallLifecycleStateEnum{oci_waf.WebAppFirewallLifecycleStateActive}
+	listWebAppFirewallsRequest.LifecycleState = oci_waf.ListWebAppFirewallsLifecycleStateActive
 	listWebAppFirewallsResponse, err := wafClient.ListWebAppFirewalls(context.Background(), listWebAppFirewallsRequest)
 
 	if err != nil {
 		return resourceIds, fmt.Errorf("Error getting WebAppFirewall list for compartment id : %s , %s \n", compartmentId, err)
 	}
 	for _, webAppFirewall := range listWebAppFirewallsResponse.Items {
-		id := *webAppFirewall.GetId()
+		id := *webAppFirewall.Id
 		resourceIds = append(resourceIds, id)
 		acctest.AddResourceIdToSweeperResourceIdMap(compartmentId, "WebAppFirewallId", id)
 	}
@@ -343,7 +343,7 @@ func getWebAppFirewallIds(compartment string) ([]string, error) {
 func webAppFirewallSweepWaitCondition(response common.OCIOperationResponse) bool {
 	// Only stop if the resource is available beyond 3 mins. As there could be an issue for the sweeper to delete the resource and manual intervention required.
 	if webAppFirewallResponse, ok := response.Response.(oci_waf.GetWebAppFirewallResponse); ok {
-		return webAppFirewallResponse.GetLifecycleState() != oci_waf.WebAppFirewallLifecycleStateDeleted
+		return webAppFirewallResponse.LifecycleState != oci_waf.WebAppFirewallLifecycleStateDeleted
 	}
 	return false
 }

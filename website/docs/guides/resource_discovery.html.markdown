@@ -182,6 +182,7 @@ The generated `.tf` files contain the Terraform configuration with the resources
     * `vault` - Discovers vault resources within the specified compartment
     * `visual_builder` - Discovers visual_builder resources within the specified compartment
     * `vulnerability_scanning` - Discovers vulnerability_scanning resources within the specified compartment
+    * `waa` - Discovers waa resources within the specified compartment
     * `waas` - Discovers waas resources within the specified compartment
     * `waf` - Discovers waf resources within the specified compartment
 * `tf_version` - The version of terraform syntax to generate for configurations. Default is v0.12. The state file will be written in v0.12 only. The allowed values are:
@@ -781,6 +782,11 @@ vulnerability_scanning
 * oci\_vulnerability\_scanning\_host\_scan\_target
 * oci\_vulnerability\_scanning\_container\_scan\_recipe
 * oci\_vulnerability\_scanning\_container\_scan\_target
+
+waa
+    
+* oci\_waa\_web\_app\_acceleration\_policy
+* oci\_waa\_web\_app\_acceleration
 
 waas
     

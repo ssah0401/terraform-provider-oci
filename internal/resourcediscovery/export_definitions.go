@@ -3159,6 +3159,18 @@ var exportVulnerabilityScanningContainerScanTargetHints = &TerraformResourceHint
 	},
 }
 
+var exportWaaWebAppAccelerationPolicyHints = &TerraformResourceHints{
+	resourceClass:        "oci_waa_web_app_acceleration_policy",
+	datasourceClass:      "oci_waa_web_app_acceleration_policy",
+	resourceAbbreviation: "web_app_acceleration_policy",
+}
+
+var exportWaaWebAppAccelerationHints = &TerraformResourceHints{
+	resourceClass:        "oci_waa_web_app_acceleration",
+	datasourceClass:      "oci_waa_web_app_acceleration",
+	resourceAbbreviation: "web_app_acceleration",
+}
+
 var exportWaasAddressListHints = &TerraformResourceHints{
 	resourceClass:          "oci_waas_address_list",
 	datasourceClass:        "oci_waas_address_lists",
